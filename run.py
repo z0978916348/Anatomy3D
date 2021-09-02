@@ -27,7 +27,7 @@ from common.utils import deterministic_random
 import random
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 #torch.backends.cudnn.benchmark=True
 args = parse_args()
 print(args)
@@ -61,7 +61,7 @@ for subject in dataset.subjects():
         anim['positions_3d'] = positions_3d
 
 print('Loading 2D detections...')
-keypoints = np.load('data/data_2d_' + args.dataset + '_' + args.keypoints + '.npz')
+keypoints = np.load('data/data_2d_' + args.dataset + '_' + args.keypoints + '.npz', allow_pickle=True)
 keypoints_metadata = keypoints['metadata'].item()
 keypoints_symmetry = keypoints['metadata'].item()['keypoints_symmetry']
 kps_left, kps_right = list(keypoints_symmetry[0]), list(keypoints_symmetry[1])
@@ -204,11 +204,12 @@ model_pos = TemporalModel(poses_valid_2d[0].shape[-2], poses_valid_2d[0].shape[-
                             filter_widths=filter_widths, causal=args.causal, dropout=args.dropout, channels=args.channels,
                             dense=args.dense)
 
-model_pos_train=nn.DataParallel(model_pos_train,device_ids=[0,1,2]) # multi-GPU
-model_pos=nn.DataParallel(model_pos,device_ids=[0,1,2]) # multi-GPU
+# model_pos_train=nn.DataParallel(model_pos_train,device_ids=[0,1,2]) # multi-GPU
+# model_pos=nn.DataParallel(model_pos,device_ids=[0,1,2]) # multi-GPU
 
 
-receptive_field = model_pos.module.receptive_field()
+
+receptive_field = model_pos.receptive_field()
 print('INFO: Receptive field: {} frames'.format(receptive_field))
 pad = (receptive_field - 1) // 2 # Padding on each side
 if args.causal:
@@ -256,7 +257,6 @@ if not args.evaluate:
     initial_momentum = 0.1
     final_momentum = 0.001
     
-    
     train_generator = ChunkedGenerator(args.batch_size//args.stride, cameras_train, poses_train, poses_train_2d, args.randnum, boneindex, args.augdegree, args.stride,
                                        pad=pad, causal_shift=causal_shift, shuffle=True, augment=args.data_augmentation,
                                        kps_left=kps_left, kps_right=kps_right, joints_left=joints_left, joints_right=joints_right)
@@ -287,6 +287,7 @@ if not args.evaluate:
             cam = torch.from_numpy(cam.astype('float32'))
             inputs_3d = torch.from_numpy(batch_3d.astype('float32'))
             inputs_2d = torch.from_numpy(batch_2d.astype('float32'))
+            # print(inputs_3d.shape, inputs_2d.shape)
             if torch.cuda.is_available():
                 inputs_3d = inputs_3d.cuda()
                 inputs_2d = inputs_2d.cuda()
@@ -317,6 +318,7 @@ if not args.evaluate:
             inputs_2d_rand = inputs_2d_rand[:,:,:,:2].contiguous()
             #get the grounth-truth bone length (b * nb), directly average the frames since bone length is consistent across frame
             inputs_3d_length = getbonelength(inputs_3d, boneindex).mean(1)
+            
             predicted_3d_pos, bonelength, predicted_3d_rand, bonelengthaug, predicted_3d_randaug, bonedirect_2, bonedirect_1, predicted_js_2, predicted_js_1 = model_pos_train(inputs_2d, inputs_2d_rand, inputs_2d_randaug)
 
             bonedirect_2 = bonedirect_2.view(bonedirect_2.size(0),-1,3)
@@ -404,7 +406,7 @@ if not args.evaluate:
         
         # Decay BatchNorm momentum
         momentum = initial_momentum * np.exp(-epoch/args.epochs * np.log(initial_momentum/final_momentum))
-        model_pos_train.module.set_bn_momentum(momentum)
+        model_pos_train.set_bn_momentum(momentum)
             
         # Save checkpoint if necessary
         if epoch % args.checkpoint_frequency == 0:

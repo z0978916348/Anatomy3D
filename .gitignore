@@ -1,0 +1,7 @@
+common/__pycache__/*
+data/*.npz
+data/*.zip
+data/*.pkl
+data/*.tar.gz
+data/*.m
+checkpoint/*.bin
