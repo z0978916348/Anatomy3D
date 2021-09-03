@@ -204,6 +204,12 @@ model_pos = TemporalModel(poses_valid_2d[0].shape[-2], poses_valid_2d[0].shape[-
                             filter_widths=filter_widths, causal=args.causal, dropout=args.dropout, channels=args.channels,
                             dense=args.dense)
 
+if args.pretrained is not None: 
+    print(f'Load pretrained model weight from {args.pretrained} ...')
+    pretrainPath = os.path.join('checkpoint', args.pretrained)
+    pretrain = torch.load(pretrainPath, map_location=lambda storage, loc: storage)
+    model_pos_train.load_state_dict(pretrain['model_pos'])
+
 # model_pos_train=nn.DataParallel(model_pos_train,device_ids=[0,1,2]) # multi-GPU
 # model_pos=nn.DataParallel(model_pos,device_ids=[0,1,2]) # multi-GPU
 

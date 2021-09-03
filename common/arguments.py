@@ -80,6 +80,9 @@ def parse_args():
     parser.add_argument('--viz-downsample', type=int, default=1, metavar='N', help='downsample FPS by a factor N')
     parser.add_argument('--viz-size', type=int, default=5, metavar='N', help='image size')
     
+    # Customize
+    parser.add_argument('-pre', '--pretrained', default=None, type=str, metavar='PATH', help='load pre-trained weight for training')
+
     parser.set_defaults(bone_length_term=True)
     parser.set_defaults(data_augmentation=True)
     parser.set_defaults(test_time_augmentation=True)
