@@ -405,7 +405,7 @@ class TemporalModelOptimized1f(TemporalModelBase):
 
         bs = x_rand.size(0)
         ss = x_rand.size(1)
-        print(x_rand.shape, x_randaug.shape)
+    
         #first deal with the bone length prediction network
         x_rand = x_rand.view(x_rand.size(0)*x_rand.size(1),-1)
         x_rand = self.drop(self.relu(self.layers_bnbone[0](self.layers_convbone[0](x_rand))))
